@@ -1,0 +1,6 @@
+<svg width="140" height="140" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="90" fill="#0a0a0f" stroke="#00eaff" stroke-width="6"
+    style="filter: drop-shadow(0 0 10px #00eaff);"/>
+  <path d="M60 120 Q100 40 140 120" stroke="#00eaff" stroke-width="8" fill="none"
+    style="filter: drop-shadow(0 0 10px #00eaff);"/>
+</svg>
