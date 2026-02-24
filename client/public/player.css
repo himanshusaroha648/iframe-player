@@ -1,0 +1,939 @@
+/* ========== RESET & BASE ========== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    /* Koi bhi text ya element select na ho */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: #0d0d0d;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ========== PAGE WRAPPER ========== */
+.page-wrapper {
+    width: 100%;
+    /* allow the player to expand to the full viewport width so there
+       aren't visible side gutters */
+    max-width: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* ========== PLAYER CONTAINER ========== */
+.player-container {
+    position: relative;
+    width: 100%;
+    max-width: 1280px;
+    aspect-ratio: 16 / 9;
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+    cursor: default;
+}
+
+/* ========== VIDEO ========== */
+#videoEl {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    background: #000000;
+}
+
+/* ========== CLICK OVERLAY ========== */
+.click-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    cursor: pointer;
+}
+
+/* ========== CENTER ICON (play/pause flash) ========== */
+.center-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 50%;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.center-icon.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.center-icon svg {
+    width: 36px;
+    height: 36px;
+    fill: #fff;
+}
+
+/* ========== 2X SPEED BADGE ========== */
+#speedBadge {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 5px 18px;
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 999;
+    letter-spacing: 0.5px;
+    backdrop-filter: blur(6px);
+    transition: opacity 0.2s ease;
+    white-space: nowrap;
+}
+
+#speedBadge.visible {
+    opacity: 1;
+}
+
+/* ========== SKIP FEEDBACK ========== */
+.skip-feedback {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 20px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(6px);
+}
+
+.skip-feedback.left {
+    left: 20px;
+}
+
+.skip-feedback.right {
+    right: 20px;
+}
+
+.skip-feedback.show {
+    opacity: 1;
+}
+
+/* ========== CONTROLS ========== */
+.controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    padding: 40px 12px 10px;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.85) 70%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+/* Controls sirf tab dikhega jab video ready ho (JS adds .video-ready) */
+.player-container.video-ready:hover .controls,
+.player-container.video-ready.paused .controls,
+.player-container.video-ready.settings-open .controls {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Auto-hide: controls-hidden class JS deta hai 3s inactivity ke baad */
+.player-container.video-ready .controls.controls-hidden {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.4s ease;
+}
+
+/* Cursor bhi hide karo jab controls hide ho */
+.cursor-hidden,
+.cursor-hidden * {
+    cursor: none !important;
+}
+
+/* ========== PROGRESS BAR ========== */
+.progress-wrap {
+    position: relative;
+    padding: 8px 0;
+    cursor: pointer;
+
+}
+
+.progress-bar {
+    position: relative;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    transition: height 0.15s;
+}
+
+.progress-wrap:hover .progress-bar {
+    height: 6px;
+}
+
+.progress-buffered {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    width: 0%;
+    pointer-events: none;
+}
+
+/* playback 111111 */
+
+.progress-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, #4103eb, #4103eb);
+    border-radius: 4px;
+    width: 0%;
+    pointer-events: none;
+}
+
+/* playback 111111 */
+.progress-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 14px;
+    height: 14px;
+    background: #4103eb;
+    border-radius: 50%;
+    left: 0%;
+    pointer-events: none;
+    transition: transform 0.15s;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+}
+
+.progress-wrap:hover .progress-thumb {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* Tooltip */
+.time-tooltip {
+    display: none;
+    position: absolute;
+    top: -28px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateX(-50%);
+}
+
+.progress-wrap:hover .time-tooltip {
+    display: none;
+    /* ab tooltip hide — thumbnail mein time dikhega */
+}
+
+/* ========== THUMBNAIL PREVIEW ========== */
+.thumb-preview {
+    display: none;
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    transform: translateX(-50%) scale(0.92);
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 40;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.thumb-preview .thumb-video {
+    display: block;
+    width: 176px;
+    height: 100px;
+    border-radius: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    background: #000;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    object-fit: cover;
+}
+
+.thumb-time {
+    margin-top: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    letter-spacing: 0.3px;
+}
+
+.progress-wrap:hover .thumb-preview {
+    display: flex;
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+/* ========== CONTROLS ROW ========== */
+.controls-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2px;
+}
+
+.controls-left,
+.controls-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* ========== CONTROL BUTTONS ========== */
+.ctrl-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.1s;
+    min-width: 30px;
+    min-height: 30px;
+}
+
+.ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(1.08);
+}
+
+.ctrl-btn.pip-active {
+    background: rgba(99, 179, 237, 0.18);
+}
+
+.ctrl-btn.pip-active svg {
+    fill: #63b3ed;
+}
+
+.ctrl-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #fff;
+}
+
+.desktop-skip svg,
+.mobile-bar-skip svg {
+    width: 16px;
+    height: 16px;
+}
+
+.ctrl-btn.text-btn {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ========== VOLUME (vertical popup) ========== */
+.volume-control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    /* hover area thoda bada karo */
+}
+
+.volume-popup {
+    position: absolute;
+    bottom: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 120px;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease 0.1s, transform 0.2s ease;
+    transform: translateX(-50%) translateY(6px);
+    z-index: 50;
+}
+
+/* Invisible bridge — popup se icon tak ka gap cover karo */
+.volume-popup::after {
+    content: '';
+    position: absolute;
+    bottom: -32px;
+    left: -8px;
+    right: -8px;
+    height: 32px;
+}
+
+.volume-control:hover .volume-popup {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 80px;
+    height: 4px;
+    border-radius: 99px;
+    outline: none;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(-90deg);
+    transition: height 0.15s;
+}
+
+.volume-slider:hover {
+    height: 5px;
+}
+
+/* Thumb — round white dot */
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+    transition: transform 0.1s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #ffffff;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+.volume-slider::-webkit-slider-runnable-track {
+    border-radius: 99px;
+}
+
+/* ========== TIME DISPLAY ========== */
+.time-display {
+    color: #fff;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 0 4px;
+    white-space: nowrap;
+}
+
+/* ========== VIDEO TITLE ========== */
+.video-title {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 0 4px 0 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+    border-left: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* ========== SETTINGS PANEL ========== */
+.settings-panel {
+    display: none;
+    position: absolute;
+    bottom: 55px;
+    right: 12px;
+    width: 148px;
+    background: rgba(18, 18, 18, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 30;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+    animation: fadeUp 0.18s ease;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.settings-panel.open {
+    display: block;
+    pointer-events: auto;
+}
+
+/* Header row: tabs + close */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.settings-tabs {
+    display: flex;
+    gap: 4px;
+}
+
+.settings-tab {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.settings-tab svg {
+    width: 15px;
+    height: 15px;
+    fill: rgba(255, 255, 255, 0.45);
+    transition: fill 0.15s;
+}
+
+.settings-tab:hover svg,
+.settings-tab.active svg {
+    fill: #fff;
+}
+
+.settings-tab.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.settings-close svg {
+    width: 16px;
+    height: 16px;
+    fill: rgba(255, 255, 255, 0.55);
+    transition: fill 0.15s;
+}
+
+.settings-close:hover svg {
+    fill: #fff;
+}
+
+/* Content area: list of options */
+.settings-content {
+    padding: 6px 0;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+    gap: 8px;
+    position: relative;
+}
+
+.settings-item::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: transparent;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.settings-item.active::before {
+    background: #fffffe;
+}
+
+.settings-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+
+.settings-item.active {
+    color: #fff;
+    font-weight: 600;
+}
+
+/* ========== SPINNER ========== */
+.spinner {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    pointer-events: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner.visible {
+    display: flex;
+}
+
+/* Pehli load pe (video-ready nahi hua abhi): dark overlay poster ke upar */
+.player-container:not(.video-ready) .spinner.visible {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+/* Playback ke dauran seeking/buffering: sirf spinner, koi overlay nahi */
+.player-container.video-ready .spinner.visible {
+    background: transparent;
+}
+
+/* Drop shadow on spinner SVG for contrast */
+.spinner svg {
+    filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.9));
+}
+
+
+/* ========== MOBILE OVERLAY CONTROLS ========== */
+/* Desktop pe hidden — sirf fullscreen mein dikhega */
+.mobile-controls {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 6;
+    align-items: center;
+    gap: 32px;
+    pointer-events: none;
+}
+
+/* Fullscreen pe center skip buttons */
+.mobile-skip-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    cursor: pointer;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+    transition: background 0.15s, transform 0.1s;
+    pointer-events: all;
+}
+
+.mobile-skip-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: #fff;
+}
+
+.mobile-skip-btn:active {
+    background: rgba(0, 0, 0, 0.75);
+    transform: scale(0.9);
+}
+
+/* Mobile in-bar skip buttons — hidden on desktop, visible on mobile (non-fullscreen) */
+.mobile-bar-skip {
+    display: none;
+}
+
+
+/* ========== FULLSCREEN ========== */
+:-webkit-full-screen .player-container,
+:fullscreen .player-container {
+    border-radius: 0;
+}
+
+/* ========== RESPONSIVE — MOBILE ========== */
+@media (max-width: 600px) {
+
+    /* Mobile overlay: HIDE on non-fullscreen mobile */
+    .mobile-controls {
+        display: none !important;
+    }
+
+    /* Hide volume button + slider on mobile */
+    .volume-control {
+        display: none !important;
+    }
+
+    /* Smaller controls bar */
+    .controls {
+        padding: 0 6px 6px;
+    }
+
+    /* Mobile pe progress bar NEECHE — buttons ke baad */
+    .controls-row {
+        order: 1;
+    }
+
+    .progress-wrap {
+        order: 2;
+        margin-top: 4px;
+    }
+
+    /* Smaller buttons */
+    .ctrl-btn {
+        padding: 4px;
+        min-width: 28px;
+        min-height: 28px;
+    }
+
+    .ctrl-btn svg {
+        width: 16px;
+        height: 16px;
+    }
+
+    /* Play/Pause button extra small on mobile */
+    #playBtn svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Smaller time text */
+    .time-display {
+        font-size: 10px;
+        padding: 0 2px;
+    }
+
+    /* Settings panel — fixed position, header always visible */
+    .settings-panel {
+        width: 130px;
+        right: 4px;
+        bottom: 68px;
+    }
+
+    /* Sirf items area scroll karo, header nahi */
+    .settings-content {
+        max-height: 90px;
+        overflow-y: auto;
+    }
+
+    /* Settings items text chhota */
+    .settings-item {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    /* Settings tab icons chhote */
+    .settings-tab svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .settings-close svg {
+        width: 13px;
+        height: 13px;
+    }
+
+    /* Gap between controls */
+    .controls-left,
+    .controls-right {
+        gap: 2px;
+    }
+
+    /* On mobile (non-fullscreen): show in-bar skip, hide desktop skip */
+    .mobile-bar-skip {
+        display: flex;
+    }
+
+    .desktop-skip {
+        display: none !important;
+    }
+}
+
+/* ===== FULLSCREEN (any screen size) ===== */
+/* Hide center overlay skip in fullscreen */
+:-webkit-full-screen .mobile-controls,
+:fullscreen .mobile-controls {
+    display: none !important;
+}
+
+/* Hide volume in fullscreen */
+:-webkit-full-screen #muteBtn,
+:-webkit-full-screen .volume-slider-wrap,
+:fullscreen #muteBtn,
+:fullscreen .volume-slider-wrap {
+    display: none !important;
+}
+
+/* Hide mobile-bar-skip in fullscreen (desktop-skip takes over) */
+:-webkit-full-screen .mobile-bar-skip,
+:fullscreen .mobile-bar-skip {
+    display: none !important;
+}
+
+/* Show desktop skip buttons in controls bar in fullscreen */
+:-webkit-full-screen .desktop-skip,
+:fullscreen .desktop-skip {
+    display: flex !important;
+}
+
+/* ===== FOCUS MODE: when player is ready (with or without paused), hide other page elements ===== */
+/* This makes the player the only visible element on the page so there
+   are no side elements or gutters visible. Uses :has (modern browsers).
+   Fallback rules also expand the player when the `video-ready` class is present
+   even if :has is not supported. */
+
+/* Modern selector: any .player-container with .video-ready (or .video-ready.paused) */
+body:has(.player-container.video-ready) {
+    background: #000;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* React app: player-container is position:fixed z-index:9999,
+   no need to hide other elements — removed display:none rules */
+
+/* In case the `.video-ready` is added to the `.page-wrapper` itself */
+body:has(.page-wrapper.video-ready) {
+    background: #000;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* removed — not needed in React context */
+
+/* Fallback: when .player-container has .video-ready, but browser lacks :has,
+   we still expand and pin the player using the class on the container/date */
+.player-container.video-ready,
+.player-container.video-ready.paused,
+.page-wrapper.video-ready .player-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 9999;
+}
+
+.player-container.video-ready #videoEl,
+.player-container.video-ready.paused #videoEl,
+.page-wrapper.video-ready .player-container #videoEl {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* ===== GLOBAL PLAYER FOCUS: apply when any .player-container exists ===== */
+/* WARNING: this will hide all other page elements except `.page-wrapper`.
+   Use only if you want the player to be the only visible element on the page. */
+body:has(.player-container) {
+    background: #000;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* removed — not needed in React context */
+
+/* Fallback (no :has support): when `.player-container` exists, expand it to full viewport */
+.player-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    aspect-ratio: auto;
+    border-radius: 0;
+    box-shadow: none;
+    z-index: 9999;
+}
+
+.player-container #videoEl {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
