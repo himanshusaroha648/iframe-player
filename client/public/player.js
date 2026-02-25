@@ -395,11 +395,21 @@ let lastThumbSeek = 0;
 const THUMB_THROTTLE = 80;
 
 if (THUMB_SRC) {
+    thumbVideo.crossOrigin = 'anonymous';
     thumbVideo.src = THUMB_SRC;
     thumbVideo.preload = 'auto';
 
     thumbVideo.addEventListener('canplay', () => { thumbReady = true; });
     thumbVideo.addEventListener('loadedmetadata', () => { thumbVideo.currentTime = 0.1; });
+
+    // Hide thumbnail preview if URL is CORS-blocked or fails to load
+    thumbVideo.addEventListener('error', () => {
+        thumbReady = false;
+        // Remove hover CSS so black box never shows
+        const style = document.createElement('style');
+        style.textContent = '.progress-wrap:hover .thumb-preview { display: none !important; }';
+        document.head.appendChild(style);
+    });
 }
 
 progressWrap.addEventListener('click', (e) => seek(e));
